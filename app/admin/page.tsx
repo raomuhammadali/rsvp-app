@@ -32,7 +32,7 @@ interface Rsvp {
 interface Event {
   id: string;
   name: string;
-  max_seats: number;
+  seat_capacity: number;
 }
 
 export default function AdminPage() {
@@ -45,7 +45,7 @@ export default function AdminPage() {
     const supabase = createClient();
     const { data: eventData } = await supabase
       .from("events")
-      .select("id, name, max_seats")
+      .select("id, name, seat_capacity")
       .single();
 
     if (eventData) {
@@ -117,7 +117,7 @@ export default function AdminPage() {
   }
 
   const seatsTaken = rsvps.length;
-  const maxSeats = event?.max_seats ?? 0;
+  const maxSeats = event?.seat_capacity ?? 0;
 
   return (
     <div className="min-h-screen bg-background p-6">

@@ -17,9 +17,8 @@ import { Button } from "@/components/ui/button";
 interface Event {
   id: string;
   name: string;
-  date: string;
-  location: string;
-  max_seats: number;
+  event_date: string;
+  seat_capacity: number;
 }
 
 export default function Page() {
@@ -67,7 +66,7 @@ export default function Page() {
     );
   }
 
-  const remaining = event.max_seats - rsvpCount;
+  const remaining = event.seat_capacity - rsvpCount;
   const soldOut = remaining <= 0;
 
   function handleSubmit(formData: FormData) {
@@ -89,13 +88,12 @@ export default function Page() {
         <CardHeader>
           <CardTitle className="text-xl">{event.name}</CardTitle>
           <CardDescription>
-            {new Date(event.date).toLocaleDateString("en-US", {
+            {new Date(event.event_date).toLocaleDateString("en-US", {
               weekday: "long",
               year: "numeric",
               month: "long",
               day: "numeric",
             })}
-            {event.location && ` · ${event.location}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -105,14 +103,14 @@ export default function Page() {
                 Sold Out
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                All {event.max_seats} seats have been claimed.
+                All {event.seat_capacity} seats have been claimed.
               </p>
             </div>
           ) : (
             <>
               <p className="mb-4 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">{remaining}</span>{" "}
-                of {event.max_seats} seats remaining
+                of {event.seat_capacity} seats remaining
               </p>
               <form ref={formRef} action={handleSubmit} className="space-y-3">
                 <Input name="name" placeholder="Full name" required />

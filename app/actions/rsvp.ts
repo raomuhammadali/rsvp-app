@@ -15,7 +15,7 @@ export async function createRSVP(formData: FormData) {
 
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, max_seats")
+    .select("id, seat_capacity")
     .single();
 
   if (eventError || !event) {
@@ -31,7 +31,7 @@ export async function createRSVP(formData: FormData) {
     return { error: "Unable to check availability." };
   }
 
-  if ((count ?? 0) >= event.max_seats) {
+  if ((count ?? 0) >= event.seat_capacity) {
     return { error: "Sorry, this event is sold out." };
   }
 
