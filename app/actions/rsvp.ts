@@ -3,6 +3,24 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+export async function getEventData() {
+  const supabase = await createClient();
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("*")
+    .single();
+
+  if (!event) return null;
+
+  const { count } = await supabase
+    .from("rsvps")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", event.id);
+
+  return { event, rsvpCount: count ?? 0 };
+}
+
 export async function createRSVP(formData: FormData) {
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
@@ -56,8 +74,17 @@ export async function createRSVP(formData: FormData) {
     return { error: "Failed to submit RSVP. Please try again." };
   }
 
+  const { count: newCount } = await supabase
+    .from("rsvps")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", event.id);
+
   revalidatePath("/");
-  return { success: "You're in! RSVP confirmed." };
+  return {
+    success: "You're in! RSVP confirmed.",
+    rsvpCount: newCount ?? (count ?? 0) + 1,
+    seatCapacity: event.seat_capacity,
+  };
 }
 
 export async function deleteRSVP(id: string) {

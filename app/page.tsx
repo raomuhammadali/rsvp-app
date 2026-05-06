@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
-import { createRSVP } from "./actions/rsvp";
+import { createRSVP, getEventData } from "./actions/rsvp";
 import {
   Card,
   CardHeader,
@@ -29,19 +28,10 @@ export default function Page() {
   const formRef = useRef<HTMLFormElement>(null);
 
   async function fetchData() {
-    const supabase = createClient();
-    const { data: eventData } = await supabase
-      .from("events")
-      .select("*")
-      .single();
-
-    if (eventData) {
-      setEvent(eventData);
-      const { count } = await supabase
-        .from("rsvps")
-        .select("*", { count: "exact", head: true })
-        .eq("event_id", eventData.id);
-      setRsvpCount(count ?? 0);
+    const data = await getEventData();
+    if (data) {
+      setEvent(data.event);
+      setRsvpCount(data.rsvpCount);
     }
     setLoading(false);
   }
@@ -77,7 +67,9 @@ export default function Page() {
       } else if (result.success) {
         toast.success(result.success);
         formRef.current?.reset();
-        fetchData();
+        if (result.rsvpCount !== undefined) {
+          setRsvpCount(result.rsvpCount);
+        }
       }
     });
   }
@@ -97,34 +89,48 @@ export default function Page() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {soldOut ? (
-            <div className="rounded-lg bg-destructive/10 p-4 text-center">
-              <p className="text-lg font-semibold text-destructive">
-                Sold Out
+          <p className="mb-4 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">
+              {soldOut ? 0 : remaining}
+            </span>{" "}
+            of {event.seat_capacity} seats remaining
+          </p>
+
+          <form ref={formRef} action={handleSubmit} className="space-y-3">
+            <Input
+              name="name"
+              placeholder="Full name"
+              required
+              disabled={soldOut}
+            />
+            <Input
+              name="email"
+              type="email"
+              placeholder="Email address"
+              required
+              disabled={soldOut}
+            />
+            <Button
+              type="submit"
+              className={`w-full transition-opacity ${
+                soldOut ? "cursor-not-allowed opacity-50" : ""
+              }`}
+              disabled={pending || soldOut}
+            >
+              {pending ? "Submitting..." : "RSVP Now"}
+            </Button>
+          </form>
+
+          {soldOut && (
+            <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-5 text-center dark:border-amber-900 dark:bg-amber-950/30">
+              <p className="text-base font-semibold text-amber-800 dark:text-amber-300">
+                This event is fully booked
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                All {event.seat_capacity} seats have been claimed.
+              <p className="mt-1 text-sm text-amber-600 dark:text-amber-400">
+                All {event.seat_capacity} seats have been reserved. Thank you
+                for your interest — we hope to see you at a future event!
               </p>
             </div>
-          ) : (
-            <>
-              <p className="mb-4 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{remaining}</span>{" "}
-                of {event.seat_capacity} seats remaining
-              </p>
-              <form ref={formRef} action={handleSubmit} className="space-y-3">
-                <Input name="name" placeholder="Full name" required />
-                <Input
-                  name="email"
-                  type="email"
-                  placeholder="Email address"
-                  required
-                />
-                <Button type="submit" className="w-full" disabled={pending}>
-                  {pending ? "Submitting..." : "RSVP Now"}
-                </Button>
-              </form>
-            </>
           )}
         </CardContent>
       </Card>
